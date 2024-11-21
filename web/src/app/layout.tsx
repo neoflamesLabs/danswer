@@ -97,14 +97,14 @@ export default async function RootLayout({
     return getPageContent(
       <div className="flex flex-col items-center justify-center min-h-screen">
         <div className="mb-2 flex items-center max-w-[175px]">
-          <HeaderTitle>Danswer</HeaderTitle>
+          <HeaderTitle>Wulo</HeaderTitle>
           <Logo height={40} width={40} />
         </div>
 
         <CardSection className="max-w-md">
           <h1 className="text-2xl font-bold mb-4 text-error">Error</h1>
           <p className="text-text-500">
-            Your Danswer instance was not configured properly and your settings
+            Your Wulo instance was not configured properly and your settings
             could not be loaded. This could be due to an admin configuration
             issue or an incomplete setup.
           </p>
@@ -142,7 +142,7 @@ export default async function RootLayout({
     return getPageContent(
       <div className="flex flex-col items-center justify-center min-h-screen">
         <div className="mb-2 flex items-center max-w-[175px]">
-          <HeaderTitle>Danswer</HeaderTitle>
+          <HeaderTitle>Wulo</HeaderTitle>
           <Logo height={40} width={40} />
         </div>
         <CardSection className="w-full max-w-md">
