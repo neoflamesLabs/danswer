@@ -75,11 +75,7 @@ export default function LogoType({
               )}
             </div>
           ) : (
-<<<<<<< Updated upstream
-            <HeaderTitle backgroundToggled={toggled}>Danswer</HeaderTitle>
-=======
             <HeaderTitle>Wulo</HeaderTitle>
->>>>>>> Stashed changes
           )}
         </div>
       </div>
