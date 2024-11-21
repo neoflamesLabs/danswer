@@ -9,3 +9,4 @@
 /backend/tests/regression/answer_quality/search_test_config.yaml
 /web/test-results/deployment/helm/charts/danswer/charts/
 deployment/helm/charts/danswer/*.tgz
+deployment/helm/charts/danswer/charts/
