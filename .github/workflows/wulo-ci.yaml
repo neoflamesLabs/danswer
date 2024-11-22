@@ -1,0 +1,100 @@
+name: Wulo Danswer CI
+
+on:
+  push:
+    branches: [ development, main ]
+    paths:
+      - 'web/**'
+      - 'backend/**'
+      - 'deployment/**'
+  pull_request:
+    branches: [ main ]
+
+env:
+  ACR_NAME: crazwulouksouthcyhopvstuu4wg
+  REGISTRY: crazwulouksouthcyhopvstuu4wg.azurecr.io
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [web, backend]
+        include:
+          - component: web
+            dockerfile: ./web/Dockerfile
+            context: ./web
+          - component: backend
+            dockerfile: ./backend/Dockerfile
+            context: ./backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: ACR Login
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ env.REGISTRY }}
+          username: ${{ env.ACR_NAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Generate Image Tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/danswer-${{ matrix.component }}
+          tags: |
+            type=sha,format=long
+            type=ref,event=branch
+            type=ref,event=pr
+
+      - name: Build and Push
+        uses: ./.github/actions/custom-build-and-push
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/danswer-${{ matrix.component }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/danswer-${{ matrix.component }}:buildcache,mode=max
+
+  update-helm:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+
+      - name: Update Helm Values
+        run: |
+          yq e '.webserver.image.repository = "${{ env.REGISTRY }}/danswer-web"' -i deployment/helm/charts/danswer/values.yaml
+          yq e '.webserver.image.tag = "${{ github.sha }}"' -i deployment/helm/charts/danswer/values.yaml
+          yq e '.api.image.repository = "${{ env.REGISTRY }}/danswer-backend"' -i deployment/helm/charts/danswer/values.yaml
+          yq e '.api.image.tag = "${{ github.sha }}"' -i deployment/helm/charts/danswer/values.yaml
+
+      - name: Package Helm Chart
+        run: |
+          helm dependency update deployment/helm/charts/danswer
+          helm package deployment/helm/charts/danswer
+
+      - name: Push to ACR
+        run: |
+          az acr helm push -n ${{ env.ACR_NAME }} danswer-stack-*.tgz
